@@ -44,3 +44,35 @@ password: <your favorite password ex. 123456>
 chpasswd: { expire: False }
 ssh_pwauth: True
 ```
+
+### General setup
+
+#### Update package database
+
+```
+$ sudo apt-get update
+```
+
+#### Change to faster mirror site
+
+```
+$ sudo sed -i 's/nova.clouds.archive.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
+```
+
+#### NTP
+
+Install ntp
+```
+$ sudo apt-get install ntp
+```
+Start ntp daemon
+```
+$ sudo service ntp start
+```
+
+#### /etc/hosts
+```
+<CONTROLLER_IP> controller
+<COMPUTE1_IP> compute1
+<COMPUTE2_IP> compute2
+```
