@@ -30,7 +30,7 @@ https://openstack-grizzly.it.nctu.edu.tw, one controller node and two compute no
 
 Sample profile
 
-* flavor: cpu1ram1disk20
+* flavor: cpu1ram2disk20 for controller node, cpu1ram1disk20 for others
 * image: Ubuntu 14.04 LTS (Trusty Tahr) amd64 cloudimg
 * networking: Shared_Network
 
