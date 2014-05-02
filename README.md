@@ -47,16 +47,17 @@ ssh_pwauth: True
 
 ### General setup
 
-#### Update package database
-
-```
-$ sudo apt-get update
-```
-
 #### Change to faster mirror site
 
 ```bash
 $ sudo sed -i 's/nova.clouds.archive.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
+$ sudo sed -i 's/security.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
+```
+
+#### Update package database
+
+```
+$ sudo apt-get update
 ```
 
 #### NTP
