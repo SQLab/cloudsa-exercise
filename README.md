@@ -403,3 +403,99 @@ $ nova net-list
 ```bash
 $ sudo apt-get install apache2 memcached libapache2-mod-wsgi openstack-dashboard
 ```
+
+### Compute Node(s)
+
+#### Database
+```bash
+$ sudo apt-get install python-mysqldb
+```
+
+#### Compute Service (Nova)
+
+##### Install package(s)
+```bash
+$ sudo apt-get install nova-compute-kvm python-guestfs
+```
+
+##### Make kernel readable by normal user
+```bash
+$ sudo dpkg-statoverride  --update --add root root 0644 /boot/vmlinuz-$(uname -r)
+```
+
+##### Modify `/etc/nova/nova.conf`
+```
+[DEFAULT]
+...
+auth_strategy = keystone
+...
+rpc_backend = rabbit
+rabbit_host = controller
+rabbit_password = <RABBIT_PASS>
+...
+my_ip = <COMPUTEN_IP>
+vnc_enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = <COMPUTEN_IP>
+novncproxy_base_url = http://controller:6080/vnc_auto.html
+...
+glance_host = controller
+...
+[database]
+# The SQLAlchemy connection string used to connect to the database
+connection = mysql://nova:<NOVA_DBPASS>@controller/nova
+
+[keystone_authtoken]
+auth_uri = http://controller:5000
+auth_host = controller
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = nova
+admin_password = <NOVA_PASS>
+```
+
+##### Modify `/etc/nova/nova-compute.conf`
+This testing environment does not support nested hardware acceleration
+```
+[libvirt]
+...
+virt_type = qemu
+```
+
+##### Restart nova service
+```bash
+$ sudo service nova-compute restart
+```
+
+#### Networking Service (Nova Network)
+
+##### Install package(s)
+```bash
+$ sudo apt-get install nova-network nova-api-metadata
+```
+
+##### Modify `/etc/nova/nova.conf`
+```
+[DEFAULT]
+...
+network_api_class = nova.network.api.API
+security_group_api = nova
+firewall_driver = nova.virt.libvirt.firewall.IptablesFirewallDriver
+network_manager = nova.network.manager.FlatDHCPManager
+network_size = 254
+allow_same_net_traffic = False
+multi_host = True
+send_arp_for_ha = True
+share_dhcp_address = True
+force_dhcp_release = True
+flat_network_bridge = br100
+flat_interface = eth0
+public_interface = br100
+```
+
+##### Restart nova-network
+```
+$ sudo service nova-network restart
+$ sudo service nova-api-metadata restart
+```
