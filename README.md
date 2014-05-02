@@ -26,7 +26,7 @@ An example set up of two-node architecture
 ### Prerequisite
 
 Deploy three Ubuntu 14.04 LTS (Trust Tahr) nodes on
-https://openstack-grizzly.nctu.edu.tw, one controller node and two compute nodes.
+https://openstack-grizzly.it.nctu.edu.tw, one controller node and two compute nodes.
 
 Sample profile
 
