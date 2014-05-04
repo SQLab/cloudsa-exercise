@@ -1,6 +1,16 @@
 Cloud System Administration Exercise
 ====================================
 
+Notation
+--------
+
+### User-defined variable
+
+User-defined variable is documented in the form `<blah blah blah>`.
+Replace it with your choice. For example, replace `<CONTROLLER_IP>` with the
+IP address of your controller node. And replace `<KEYSTONE_DBPASS>` with your
+favorite password.
+
 Exercise One
 ------------
 
@@ -40,14 +50,19 @@ to enable login through password.
 
 ```
 #cloud-config
-password: <your favorite password ex. 123456>
+password: <USER_PASSWORD>
 chpasswd: { expire: False }
 ssh_pwauth: True
 ```
 
+Once the instance boots up, you should be able to login with user `ubuntu`
+and password `<USER_PASSWORD>`.
+
 ### General setup
 
-#### Change to faster mirror site
+This section applys to all nodes.
+
+#### Switch to faster mirror site
 
 ```bash
 $ sudo sed -i 's/nova.clouds.archive.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
