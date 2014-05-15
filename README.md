@@ -95,6 +95,13 @@ $ sudo service ntp start
 
 ### Controller Node
 
+#### Associate a pulic ip address
+
+Associate a public ip address for the controller node via the website.
+You will be able to access the controller node through this ip address,
+which means your servers are exposed to the wild without any protection.
+You better use stronger password and set up a firewall service.
+
 #### Database
 
 ##### Install package(s)
@@ -200,7 +207,7 @@ $ keystone tenant-create --name=service --description="Service Tenant"
 $ keystone service-create --name=keystone --type=identity --description="OpenStack Identity"
 $ keystone endpoint-create \
   --service-id=$(keystone service-list | awk '/ identity / {print $2}') \
-  --publicurl=http://controller:5000/v2.0 \
+  --publicurl=http://<CONTROLLER_PUBLIC_IP>:5000/v2.0 \
   --internalurl=http://controller:5000/v2.0 \
   --adminurl=http://controller:35357/v2.0
 ```
