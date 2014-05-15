@@ -412,14 +412,6 @@ $ sudo service nova-scheduler restart
 $ sudo service nova-conductor restart
 ```
 
-##### Create a flat network
-```
-$ source adminrc
-$ nova network-create demo-net --bridge br100 --multi-host T \
-  --fixed-range-v4 192.168.100.0/24
-$ nova net-list
-```
-
 #### Dashboard (Horizon)
 
 ##### Install package(s)
@@ -521,4 +513,12 @@ public_interface = br100
 ```
 $ sudo service nova-network restart
 $ sudo service nova-api-metadata restart
+```
+
+##### Create a flat network
+```
+controller $ source adminrc
+controller $ nova network-create demo-net --bridge br100 --multi-host T \
+  --fixed-range-v4 192.168.100.0/24
+controller $ nova net-list
 ```
