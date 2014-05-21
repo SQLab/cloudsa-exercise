@@ -522,3 +522,314 @@ controller $ nova network-create demo-net --bridge br100 --multi-host T \
   --fixed-range-v4 192.168.100.0/24
 controller $ nova net-list
 ```
+
+Exercise Two
+------------
+
+### Notice
+
+Delete all nodes used in the previous exercise.
+
+### Overview
+
+An example set up of two-node architecture deployed by an extra puppet master
+node.
+
+* Puppet Master
+    - Puppet Master
+* Controller Node
+    - Puppet Agent
+    - Identity (Keystone)
+    - Image Service (Glance)
+    - Compute Management (Nova)
+    - Networking Management (Nova Network)
+    - Dashboard (Horizon)
+* Compute Node
+    - Puppet Agent
+    - Compute (Nova)
+    - Networking (Nova Network)
+
+### Prerequisite
+
+### General Setup
+
+This section applys to all nodes.
+
+#### Switch to faster mirror site
+
+```bash
+$ sudo sed -i 's/nova.clouds.archive.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
+$ sudo sed -i 's/security.ubuntu.com/ubuntu.cs.nctu.edu.tw/g' /etc/apt/sources.list
+```
+
+#### Update package database
+```bash
+$ sudo apt-get update
+```
+
+#### NTP
+
+##### Install ntp
+```bash
+$ sudo apt-get install ntp
+```
+
+#### Setup `/etc/hosts`
+```
+<PUPPETMASTER_IP> puppet
+<CONTROLLER_IP> controller
+<COMPUTE1_IP> compute1
+<COMPUTE2_IP> compute2
+```
+
+### Puppet Master
+
+#### Puppet
+
+##### Install package(s)
+```bash
+$ sudo apt-get install puppetmaster
+```
+
+##### Install openstack puppet module
+```bash
+$ sudo puppet module install puppetlabs-openstack
+```
+
+##### Modify `/etc/puppet/hiera.yaml`
+```yaml
+---
+:backends:
+  - yaml
+:yaml:
+  :datadir: /etc/puppet/hieradata
+:hierarchy:
+  - common
+```
+
+##### Modify `/etc/puppet/hieradata/common.yaml`
+```yaml
+openstack::region: 'openstack'
+
+######## Networks
+openstack::network::api: '10.10.0.0/16'
+openstack::network::external: '192.168.100.0/24'
+openstack::network::management: '10.10.0.0/16'
+openstack::network::data: '10.10.0.0/16'
+
+openstack::network::external::ippool::start: 192.168.100.100
+openstack::network::external::ippool::end: 192.168.100.250
+openstack::network::external::gateway: 192.168.100.254
+openstack::network::external::dns: 8.8.8.8
+
+######## Private Neutron Network
+
+openstack::network::neutron::private: '192.168.200.0/24'
+
+######## Fixed IPs (controllers)
+
+openstack::controller::address::api: '<CONTROLLER_IP>'
+openstack::controller::address::management: '<CONTROLLER_IP'
+openstack::storage::address::api: '<CONTROLLER_IP>'
+openstack::storage::address::management: '<CONTROLLER_IP>'
+
+######## Database
+
+openstack::mysql::root_password: '<MYSQL_ROOT_PASSWORD>'
+openstack::mysql::service_password: '<MYSQL_SERVICE_PASSWORD>'
+openstack::mysql::allowed_hosts: ['localhost', '127.0.0.1', '10.10.0.%']
+
+######## RabbitMQ
+
+openstack::rabbitmq::user: 'guest'
+openstack::rabbitmq::password: 'guest'
+
+######## Keystone
+
+openstack::keystone::admin_token: '<ADMIN_TOKEN>'
+openstack::keystone::admin_email: 'admin@example.com'
+openstack::keystone::admin_password: '<KEYSTONE_PASSWORD>'
+
+openstack::tenants:
+    "test":
+        description: "Test tenant"
+    "demo":
+        description: "Demo Tenant"
+    "demo2":
+        description: "Demo2 Tenant"
+    "service":
+        description: "Service Tenant"
+
+openstack::users:
+    "test":
+        password: "<TEST_PASS>"
+        tenant: "test"
+        email: "test@example.com"
+        admin: true
+    "demo":
+        password: "<DEMO_PASS>"
+        tenant: "demo"
+        email: "demo@example.com"
+        admin: false
+    "demo2":
+        password: "<DEMO2_PASS>"
+        tenant: "demo2"
+        email: "demo2@example.com"
+        admin: false
+
+######## Glance
+
+openstack::glance::password: '<GLANCE_PASS>'
+
+######## Cinder
+
+openstack::cinder::password: '<CINDER_PASS>'
+openstack::cinder::volume_size: '8G'
+
+######## Swift
+
+openstack::swift::password: '<SWIFT_PASS>'
+openstack::swift::hash_suffix: 'pop-bang'
+
+######## Nova
+
+openstack::nova::libvirt_type: 'kvm'
+openstack::nova::password: '<NOVA_PASS>'
+
+######## Neutron
+
+openstack::neutron::password: '<NEUTRON_PASS>'
+openstack::neutron::shared_secret: '<NEUTRON_SECRET>'
+
+######## Ceilometer
+openstack::ceilometer::mongo::password: '<CEILOMETER_MONGO_PASS>'
+openstack::ceilometer::password: '<CEILOMETER_PASS>'
+openstack::ceilometer::meteringsecret: '<CEILOMETER_SECRET_KEY>'
+
+######## Heat
+openstack::heat::password: '<HEAT_PASS>'
+openstack::heat::encryption_key: '<HEAT_SECRET_KEY>'
+
+######## Horizon
+
+openstack::horizon::secret_key: '<HORIZON_SECRET_KEY>'
+
+######## Tempest
+
+openstack::tempest::configure_images    : true
+openstack::tempest::image_name          : 'Cirros'
+openstack::tempest::image_name_alt      : 'Cirros'
+openstack::tempest::username            : 'demo'
+openstack::tempest::username_alt        : 'demo2'
+openstack::tempest::username_admin      : 'test'
+openstack::tempest::configure_network   : true
+openstack::tempest::public_network_name : 'public'
+openstack::tempest::cinder_available    : false
+openstack::tempest::glance_available    : true
+openstack::tempest::horizon_available   : true
+openstack::tempest::nova_available      : true
+openstack::tempest::neutron_available   : false
+openstack::tempest::heat_available      : false
+openstack::tempest::swift_available     : false
+
+######## Log levels
+openstack::verbose: 'True'
+openstack::debug: 'True'
+```
+
+##### Restart puppetmaster
+```bash
+$ sudo service puppetmaster restart
+```
+
+##### Modify `/etc/puppet/manifests/site.pp`
+```puppet
+class mycontroller inherits ::openstack::role {
+  class { '::openstack::profile::firewall': }
+  class { '::openstack::profile::rabbitmq': }
+  class { '::openstack::profile::memcache': }
+  class { '::openstack::profile::mysql': }
+  class { '::openstack::profile::keystone': }
+  class { '::openstack::profile::glance::api': } ->
+  class { '::openstack::profile::glance::auth': }
+  class { '::openstack::profile::nova::api': }
+  class { '::openstack::profile::horizon': }
+  class { '::openstack::profile::auth_file': }
+  class { '::openstack::setup::cirros': }
+  #class { '::openstack::profile::tempest': }
+}
+
+class mycompute inherits ::openstack::role {
+  class { '::openstack::profile::firewall': }
+  class { '::openstack::profile::nova::compute': }
+}
+
+node 'controller.openstacklocal' {
+    include mycontroller
+}
+
+node /^compute\d+.openstacklocal$/ {
+    include mycompute
+}
+```
+
+### Controller Node
+
+#### Puppet
+
+##### Install package(s)
+```bash
+$ sudo apt-get install puppet
+```
+
+##### Enable puppet agent
+```bash
+$ sudo puppet agent --enable
+```
+
+##### Sign certificate
+```bash
+$ sudo puppet agent -t
+puppet $ sudo puppet cert list
+puppet $ sudo puppet cert sign controller.openstacklocal
+```
+
+##### Modify `/root/.my.cnf`
+```
+[client]
+user=root
+host=localhost
+password='<MYSQL_ROOT_PASSWD>'
+socket=/var/run/mysqld/mysqld.sock
+```
+
+##### Initial run
+```bash
+$ sudo puppet agent -t
+```
+
+### Compute Node
+
+#### Puppet
+
+##### Install package(s)
+```bash
+$ sudo apt-get install puppet
+```
+
+##### Enable puppet agent
+```bash
+$ sudo puppet agent --enable
+```
+
+##### Sign certificate
+```bash
+$ sudo puppet agent -t
+puppet $ sudo puppet cert list
+puppet $ sudo puppet cert sign computeN.openstacklocal
+```
+
+##### Initial run
+```bash
+$ sudo puppet agent -t
+```
