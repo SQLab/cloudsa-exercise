@@ -652,7 +652,7 @@ openstack::network::neutron::private: '192.168.200.0/24'
 ######## Fixed IPs (controllers)
 
 openstack::controller::address::api: '<CONTROLLER_IP>'
-openstack::controller::address::management: '<CONTROLLER_IP'
+openstack::controller::address::management: '<CONTROLLER_IP>'
 openstack::storage::address::api: '<CONTROLLER_IP>'
 openstack::storage::address::management: '<CONTROLLER_IP>'
 
