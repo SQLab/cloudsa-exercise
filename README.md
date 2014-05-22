@@ -141,11 +141,6 @@ $ mysql_secure_installation
 $ sudo apt-get install rabbitmq-server
 ```
 
-##### Change password for user `guest`
-```bash
-$ sudo rabbitmqctl change_password guest <RABBIT_PASS>
-```
-
 #### Identity Service (Keystone)
 
 ##### Install package(s)
@@ -664,8 +659,8 @@ openstack::mysql::allowed_hosts: ['localhost', '127.0.0.1', '10.10.0.%']
 
 ######## RabbitMQ
 
-openstack::rabbitmq::user: 'guest'
-openstack::rabbitmq::password: 'guest'
+openstack::rabbitmq::user: 'openstack'
+openstack::rabbitmq::password: '<RABBIT_PASS>'
 
 ######## Keystone
 
