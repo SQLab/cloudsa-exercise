@@ -141,11 +141,6 @@ $ mysql_secure_installation
 $ sudo apt-get install rabbitmq-server
 ```
 
-##### Change password for user `guest`
-```bash
-$ sudo rabbitmqctl change_password guest <RABBIT_PASS>
-```
-
 #### Identity Service (Keystone)
 
 ##### Install package(s)
@@ -607,6 +602,18 @@ $ sudo apt-get install puppetmaster
 $ sudo puppet module install puppetlabs-openstack
 ```
 
+##### Patch puppetlabs-mysql
+
+XXX: This is a workaround for Ubuntu 14.04. puppetlabs-mysql upstream has
+already fixed the problem, please refer to puppetlabs/puppetlabs-mysql@c57c762
+
+```bash
+$ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/manifests/params.pp
+$ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/system/mysql_bindings_spec.rb
+$ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/classes/mysql_bindings_spec.rb
+$ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/acceptance/mysql_bindings_spec.rb
+```
+
 ##### Modify `/etc/puppet/hiera.yaml`
 ```yaml
 ---
@@ -652,8 +659,8 @@ openstack::mysql::allowed_hosts: ['localhost', '127.0.0.1', '10.10.0.%']
 
 ######## RabbitMQ
 
-openstack::rabbitmq::user: 'guest'
-openstack::rabbitmq::password: 'guest'
+openstack::rabbitmq::user: 'openstack'
+openstack::rabbitmq::password: '<RABBIT_PASS>'
 
 ######## Keystone
 
