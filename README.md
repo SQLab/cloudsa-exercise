@@ -614,7 +614,7 @@ $ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/class
 $ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/acceptance/mysql_bindings_spec.rb
 ```
 
-##### Modify `/etc/puppet/hiera.yaml`
+##### Create `/etc/puppet/hiera.yaml`
 ```yaml
 ---
 :backends:
@@ -625,7 +625,12 @@ $ sudo sed -i 's/libmysql-ruby/ruby-mysql/' /etc/puppet/modules/mysql/spec/accep
   - common
 ```
 
-##### Modify `/etc/puppet/hieradata/common.yaml`
+##### Create directory `/etc/puppet/hieradata/`
+```bash
+$ sudo mkdir /etc/puppet/hieradata/
+```
+
+##### Create `/etc/puppet/hieradata/common.yaml`
 ```yaml
 openstack::region: 'openstack'
 
@@ -760,7 +765,7 @@ openstack::debug: 'True'
 $ sudo service puppetmaster restart
 ```
 
-##### Modify `/etc/puppet/manifests/site.pp`
+##### Create `/etc/puppet/manifests/site.pp`
 ```puppet
 class mycontroller inherits ::openstack::role {
   class { '::openstack::profile::firewall': }
@@ -808,11 +813,12 @@ $ sudo puppet agent --enable
 ##### Sign certificate
 ```bash
 $ sudo puppet agent -t
+# Apply following two commands on the puppet master node
 puppet $ sudo puppet cert list
 puppet $ sudo puppet cert sign controller.openstacklocal
 ```
 
-##### Modify `/root/.my.cnf`
+##### Create `/root/.my.cnf`
 ```
 [client]
 user=root
@@ -843,6 +849,7 @@ $ sudo puppet agent --enable
 ##### Sign certificate
 ```bash
 $ sudo puppet agent -t
+# Apply following two commands on the puppet master node
 puppet $ sudo puppet cert list
 puppet $ sudo puppet cert sign compute<N>.openstacklocal
 ```
