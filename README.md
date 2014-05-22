@@ -40,7 +40,9 @@ https://openstack-grizzly.it.nctu.edu.tw, one controller node and two compute no
 
 Sample profile
 
-* flavor: cpu1ram2disk20 for controller node, cpu1ram1disk20 for others
+* flavor:
+    - controller node: cpu1ram2disk20
+    - others: cpu1ram1disk20
 * image: Ubuntu 14.04 LTS (Trusty Tahr) amd64 cloudimg
 * networking: Shared_Network
 
@@ -551,6 +553,15 @@ node.
 
 ### Prerequisite
 
+Sample profile
+
+* flavor:
+    - puppet master: m1.tiny
+    - controller node: cpu1ram2disk20
+    - others: cpu1ram1disk20
+* image: Ubuntu 14.04 LTS (Trusty Tahr) amd64 cloudimg
+* networking: Shared_Network
+
 ### General Setup
 
 This section applys to all nodes.
@@ -826,7 +837,7 @@ $ sudo puppet agent --enable
 ```bash
 $ sudo puppet agent -t
 puppet $ sudo puppet cert list
-puppet $ sudo puppet cert sign computeN.openstacklocal
+puppet $ sudo puppet cert sign compute<N>.openstacklocal
 ```
 
 ##### Initial run
