@@ -837,7 +837,7 @@ $ sudo puppet agent --enable
 ```bash
 $ sudo puppet agent -t
 puppet $ sudo puppet cert list
-puppet $ sudo puppet cert sign computeN.openstacklocal
+puppet $ sudo puppet cert sign compute<N>.openstacklocal
 ```
 
 ##### Initial run
