@@ -823,7 +823,7 @@ puppet $ sudo puppet cert sign controller.openstacklocal
 [client]
 user=root
 host=localhost
-password='<MYSQL_ROOT_PASSWD>'
+password=''
 socket=/var/run/mysqld/mysqld.sock
 ```
 
