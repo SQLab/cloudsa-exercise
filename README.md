@@ -767,7 +767,7 @@ $ sudo service puppetmaster restart
 ```
 
 ##### Create `/etc/puppet/modules/myopenstack/manifests/common/nova.pp`
-```
+```puppet
 class myopenstack::common::nova ($is_compute    = false) {
   $is_controller = $::openstack::profile::base::is_controller
 
@@ -829,7 +829,7 @@ class myopenstack::common::nova ($is_compute    = false) {
 ```
 
 ##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/api.pp`
-```
+```puppet
 class myopenstack::profile::nova::api {
   openstack::resources::controller { 'nova': }
   openstack::resources::database { 'nova': }
@@ -853,7 +853,7 @@ class myopenstack::profile::nova::api {
 ```
 
 ##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/compute.pp`
-```
+```puppet
 class myopenstack::profile::nova::compute {
   $management_network = hiera('openstack::network::management')
   $management_address = ip_for_network($management_network)
@@ -879,7 +879,7 @@ class myopenstack::profile::nova::compute {
 ```
 
 ##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/network.pp`
-```
+```puppet
 class myopenstack::profile::nova::network {
   class { '::nova::network':
     private_interface => 'eth0',
@@ -899,7 +899,7 @@ class myopenstack::profile::nova::network {
 ```
 
 ##### Create `/etc/puppet/modules/myopenstack/manifests/profile/horizon.pp`
-```
+```puppet
 class myopenstack::profile::horizon {
   class { '::horizon':
     fqdn            => [ '127.0.0.1', hiera('openstack::controller::address::api'), hiera('openstack::controller::address::api::public'), $::fqdn ],
