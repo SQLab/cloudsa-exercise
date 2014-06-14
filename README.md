@@ -653,6 +653,7 @@ openstack::network::neutron::private: '192.168.200.0/24'
 
 openstack::controller::address::api: '<CONTROLLER_IP>'
 openstack::controller::address::management: '<CONTROLLER_IP>'
+openstack::controller::address::api::public: '<CONTROLLER_PUBLIC_IP>'
 openstack::storage::address::api: '<CONTROLLER_IP>'
 openstack::storage::address::management: '<CONTROLLER_IP>'
 
@@ -765,6 +766,160 @@ openstack::debug: 'True'
 $ sudo service puppetmaster restart
 ```
 
+##### Create `/etc/puppet/modules/myopenstack/manifests/common/nova.pp`
+```
+class myopenstack::common::nova ($is_compute    = false) {
+  $is_controller = $::openstack::profile::base::is_controller
+
+  $management_network = hiera('openstack::network::management')
+  $management_address = ip_for_network($management_network)
+
+  $storage_management_address = hiera('openstack::storage::address::management')
+  $controller_management_address = hiera('openstack::controller::address::management')
+
+  class { '::nova':
+    sql_connection     => $::openstack::resources::connectors::nova,
+    glance_api_servers => "http://${storage_management_address}:9292",
+    memcached_servers  => ["${controller_management_address}:11211"],
+    rabbit_hosts       => [$controller_management_address],
+    rabbit_userid      => hiera('openstack::rabbitmq::user'),
+    rabbit_password    => hiera('openstack::rabbitmq::password'),
+    debug              => hiera('openstack::debug'),
+    verbose            => hiera('openstack::verbose'),
+    mysql_module       => '2.2',
+  }
+
+  nova_config {
+    'DEFAULT/default_floating_pool': value => 'public';
+    'DEFAULT/network_api_class':     value => 'nova.network.api.API';
+    'DEFAULT/security_group_api':    value => 'nova';
+  }
+
+  if $is_controller {
+    class { '::nova::api':
+      admin_password                       => hiera('openstack::nova::password'),
+      auth_host                            => $controller_management_address,
+      enabled                              => $is_controller,
+    }
+  }
+
+  class { '::nova::vncproxy':
+    host    => hiera('openstack::controller::address::api'),
+    enabled => $is_controller,
+  }
+
+  class { [
+    'nova::scheduler',
+    'nova::objectstore',
+    'nova::cert',
+    'nova::consoleauth',
+    'nova::conductor'
+  ]:
+    enabled => $is_controller,
+  }
+
+  # TODO: it's important to set up the vnc properly
+  class { '::nova::compute':
+    enabled                       => $is_compute,
+    vnc_enabled                   => true,
+    vncserver_proxyclient_address => $management_address,
+    vncproxy_host                 => hiera('openstack::controller::address::api::public'),
+  }
+}
+```
+
+##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/api.pp`
+```
+class myopenstack::profile::nova::api {
+  openstack::resources::controller { 'nova': }
+  openstack::resources::database { 'nova': }
+  openstack::resources::firewall { 'Nova API': port => '8774', }
+  openstack::resources::firewall { 'Nova Metadata': port => '8775', }
+  openstack::resources::firewall { 'Nova EC2': port => '8773', }
+  openstack::resources::firewall { 'Nova S3': port => '3333', }
+  openstack::resources::firewall { 'Nova novnc': port => '6080', }
+
+  class { '::nova::keystone::auth':
+    password         => hiera('openstack::nova::password'),
+    public_address   => hiera('openstack::controller::address::api::public'),
+    admin_address    => hiera('openstack::controller::address::management'),
+    internal_address => hiera('openstack::controller::address::management'),
+    region           => hiera('openstack::region'),
+    cinder           => true,
+  }
+
+  include ::myopenstack::common::nova
+}
+```
+
+##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/compute.pp`
+```
+class myopenstack::profile::nova::compute {
+  $management_network = hiera('openstack::network::management')
+  $management_address = ip_for_network($management_network)
+
+  class { 'myopenstack::common::nova':
+    is_compute => true,
+  }
+
+  class { '::nova::compute::libvirt':
+    libvirt_type     => hiera('openstack::nova::libvirt_type'),
+    vncserver_listen => $management_address,
+  }
+
+  file { '/etc/libvirt/qemu.conf':
+    ensure => present,
+    source => 'puppet:///modules/openstack/qemu.conf',
+    mode   => '0644',
+    notify => Service['libvirt'],
+  }
+
+  Package['libvirt'] -> File['/etc/libvirt/qemu.conf']
+}
+```
+
+##### Create `/etc/puppet/modules/myopenstack/manifests/profile/nova/network.pp`
+```
+class myopenstack::profile::nova::network {
+  class { '::nova::network':
+    private_interface => 'eth0',
+    fixed_range       => '192.168.100.0/24',
+    public_interface  => 'br100',
+    enabled           => true,
+  }
+
+  nova::generic_service { 'api-metadata':
+    enabled        => true,
+    manage_service => true,
+    ensure_package => true,
+    package_name   => 'nova-api-metadata',
+    service_name   => 'nova-api-metadata',
+  }
+}
+```
+
+##### Create `/etc/puppet/modules/myopenstack/manifests/profile/horizon.pp`
+```
+class myopenstack::profile::horizon {
+  class { '::horizon':
+    fqdn            => [ '127.0.0.1', hiera('openstack::controller::address::api'), hiera('openstack::controller::address::api::public'), $::fqdn ],
+    secret_key      => hiera('openstack::horizon::secret_key'),
+    cache_server_ip => hiera('openstack::controller::address::management'),
+
+  }
+
+  openstack::resources::firewall { 'Apache (Horizon)': port => '80' }
+  openstack::resources::firewall { 'Apache SSL (Horizon)': port => '443' }
+
+  if $::selinux and str2bool($::selinux) != false {
+    selboolean{'httpd_can_network_connect':
+      value      => on,
+      persistent => true,
+    }
+  }
+}
+```
+
 ##### Create `/etc/puppet/manifests/site.pp`
 ```puppet
 class mycontroller inherits ::openstack::role {
@@ -775,16 +930,16 @@ class mycontroller inherits ::openstack::role {
   class { '::openstack::profile::keystone': }
   class { '::openstack::profile::glance::api': } ->
   class { '::openstack::profile::glance::auth': }
-  class { '::openstack::profile::nova::api': }
-  class { '::openstack::profile::horizon': }
+  class { '::myopenstack::profile::nova::api': }
+  class { '::myopenstack::profile::horizon': }
   class { '::openstack::profile::auth_file': }
   class { '::openstack::setup::cirros': }
-  #class { '::openstack::profile::tempest': }
 }
 
 class mycompute inherits ::openstack::role {
   class { '::openstack::profile::firewall': }
-  class { '::openstack::profile::nova::compute': }
+  class { '::myopenstack::profile::nova::compute': }
+  class { '::myopenstack::profile::nova::network': }
 }
 
 node 'controller.openstacklocal' {
@@ -852,6 +1007,17 @@ $ sudo puppet agent -t
 # Apply following two commands on the puppet master node
 puppet $ sudo puppet cert list
 puppet $ sudo puppet cert sign compute<N>.openstacklocal
+```
+
+#### Dirty Hacks
+Facter currently use `ifconfig` to grab local ip addresses. However, `ifconfig`
+cannot correctly identify multiple addresses bound to a single interface, while
+we have both management network and data network set to br100 in this exercise.
+This hack make use of `ip` from `iproute2` to find the correct local address of
+management network.
+
+```bash
+$ sudo sed -i 's|output = Facter::Util::IP.exec_ifconfig(\["2>/dev/null"\])|output = Facter::Core::Execution.exec("/sbin/ip addr 2>/dev/null")|g' /usr/lib/ruby/vendor_ruby/facter/ipaddress.rb
 ```
 
 ##### Initial run
