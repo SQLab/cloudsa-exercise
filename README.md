@@ -1009,8 +1009,8 @@ puppet $ sudo puppet cert list
 puppet $ sudo puppet cert sign compute<N>.openstacklocal
 ```
 
-#### Dirty Hacks
-Facter currently use `ifconfig` to grab local ip addresses. However, `ifconfig`
+##### Dirty Hacks
+Facter currently uses `ifconfig` to grab local ip addresses. However, `ifconfig`
 cannot correctly identify multiple addresses bound to a single interface, while
 we have both management network and data network set to br100 in this exercise.
 This hack make use of `ip` from `iproute2` to find the correct local address of
