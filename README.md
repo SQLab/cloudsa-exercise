@@ -449,7 +449,7 @@ my_ip = <COMPUTEN_IP>
 vnc_enabled = True
 vncserver_listen = 0.0.0.0
 vncserver_proxyclient_address = <COMPUTEN_IP>
-novncproxy_base_url = http://controller:6080/vnc_auto.html
+novncproxy_base_url = http://<CONTROLLER_PUBLIC_IP>:6080/vnc_auto.html
 ...
 glance_host = controller
 ...
