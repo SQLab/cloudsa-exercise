@@ -298,7 +298,7 @@ $ keystone user-role-add --user=glance --tenant=service --role=admin
 $ keystone service-create --name=glance --type=image --description="OpenStack Image Service"
 $ keystone endpoint-create \
   --service-id=$(keystone service-list | awk '/ image / {print $2}') \
-  --publicurl=http://controller:9292 \
+  --publicurl=http://<CONTROLLER_PUBLIC_IP>:9292 \
   --internalurl=http://controller:9292 \
   --adminurl=http://controller:9292
 ```
@@ -387,7 +387,7 @@ $ keystone user-role-add --user=nova --tenant=service --role=admin
 $ keystone service-create --name=nova --type=compute --description="OpenStack Compute"
 $ keystone endpoint-create \
   --service-id=$(keystone service-list | awk '/ compute / {print $2}') \
-  --publicurl=http://controller:8774/v2/%\(tenant_id\)s \
+  --publicurl=http://<CONTROLLER_PUBLIC_IP>:8774/v2/%\(tenant_id\)s \
   --internalurl=http://controller:8774/v2/%\(tenant_id\)s \
   --adminurl=http://controller:8774/v2/%\(tenant_id\)s
 ```
