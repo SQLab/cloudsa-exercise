@@ -141,6 +141,11 @@ $ mysql_secure_installation
 $ sudo apt-get install rabbitmq-server
 ```
 
+##### Change password for rabbitmq user guest
+```bash
+$ sudo rabbitmqctl change_password guest <RABBIT_PASS>
+```
+
 #### Identity Service (Keystone)
 
 ##### Install package(s)
